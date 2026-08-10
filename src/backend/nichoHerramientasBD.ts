@@ -21,7 +21,6 @@ async function connection() {
     }
 }
 
-
 export async function closeConnection() {
     await client.close();
 }
