@@ -2,7 +2,7 @@ import "dotenv/config";
 import mongo from "mongodb";
 
 const url = process.env.MONGODB_URI;
-const databaseName = process.env.MONGODB_DB ?? "InnovaTech Solutions";
+const databaseName = process.env.MONGODB_DB ?? "InnovaTechSolutions";
 
 if (!url) {
     throw new Error("Falta la variable de entorno MONGODB_URI.");
@@ -20,6 +20,7 @@ async function connection() {
         throw error;
     }
 }
+
 
 export async function closeConnection() {
     await client.close();
