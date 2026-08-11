@@ -36,6 +36,35 @@ function createAccessToken(user) {
   return { token, sessionId, expiresAt };
 }
 
+const supportedCurrencies = ["USD", "COP", "MXN", "EUR"];
+
+function profileResponse(profile) {
+  return {
+    profession: profile.profession,
+    specialty: profile.specialty,
+    country: profile.country,
+    yearsOfExperience: profile.yearsOfExperience,
+    currency: profile.currency,
+    taxRate: profile.taxRate,
+  };
+}
+
+function validateProfile(body) {
+  const profession = String(body.profession ?? "").trim();
+  const specialty = String(body.specialty ?? "").trim();
+  const country = String(body.country ?? "").trim();
+  const yearsOfExperience = Number(body.yearsOfExperience);
+  const currency = String(body.currency ?? "").trim().toUpperCase();
+  const taxRate = Number(body.taxRate);
+
+  if (!profession || !specialty || !country) return { error: "Complete su profesion, especialidad y pais." };
+  if (!Number.isInteger(yearsOfExperience) || yearsOfExperience < 0 || yearsOfExperience > 80) return { error: "Los anos de experiencia deben ser un numero entero entre 0 y 80." };
+  if (!supportedCurrencies.includes(currency)) return { error: "Seleccione una moneda valida." };
+  if (!Number.isFinite(taxRate) || taxRate < 0 || taxRate > 100) return { error: "El impuesto debe estar entre 0 % y 100 %." };
+
+  return { profile: { profession, specialty, country, yearsOfExperience, currency, taxRate } };
+}
+
 async function createSession(users, sessions, user) {
   const { token, sessionId, expiresAt } = createAccessToken(user);
   await sessions.insertOne({ sessionId, userId: user._id, expiresAt, createdAt: new Date() });
@@ -213,6 +242,36 @@ app.post("/api/auth/logout", requireAuth, async (request, response, next) => {
   }
 });
 
+app.get("/api/profile", requireAuth, async (request, response, next) => {
+  try {
+    const { ObjectId } = await import("mongodb");
+    const database = await connection();
+    const profile = await database.collection("perfilesFreelancer").findOne({ userId: new ObjectId(request.auth.userId) });
+    return response.json({ profile: profile ? profileResponse(profile) : null });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+app.put("/api/profile", requireAuth, async (request, response, next) => {
+  try {
+    const validation = validateProfile(request.body);
+    if (validation.error) return response.status(400).json({ message: validation.error });
+
+    const { ObjectId } = await import("mongodb");
+    const database = await connection();
+    const userId = new ObjectId(request.auth.userId);
+    await database.collection("perfilesFreelancer").updateOne(
+      { userId },
+      { $set: { ...validation.profile, updatedAt: new Date() }, $setOnInsert: { userId, createdAt: new Date() } },
+      { upsert: true },
+    );
+    return response.json({ profile: validation.profile });
+  } catch (error) {
+    return next(error);
+  }
+});
+
 app.use((error, request, response, next) => {
   console.error("Error en la API de autenticacion:", error);
   response.status(500).json({ message: "No fue posible completar la solicitud." });
@@ -224,6 +283,7 @@ async function start() {
     database.collection("users").createIndex({ email: 1 }, { unique: true }),
     database.collection("sessions").createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
     database.collection("passwordResetTokens").createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
+    database.collection("perfilesFreelancer").createIndex({ userId: 1 }, { unique: true }),
   ]);
   app.listen(port, () => {
     console.log(`API de autenticacion disponible en http://localhost:${port}/api`);
