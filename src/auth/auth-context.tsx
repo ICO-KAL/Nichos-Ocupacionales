@@ -16,6 +16,15 @@ type AuthResponse = {
   user: User;
 };
 
+export type FreelancerProfile = {
+  profession: string;
+  specialty: string;
+  country: string;
+  yearsOfExperience: number;
+  currency: string;
+  taxRate: number;
+};
+
 type AuthContextValue = {
   user: User | null;
   isLoading: boolean;
@@ -23,6 +32,8 @@ type AuthContextValue = {
   signUp: (name: string, email: string, password: string) => Promise<void>;
   requestPasswordReset: (email: string) => Promise<string | undefined>;
   resetPassword: (email: string, code: string, password: string) => Promise<void>;
+  getProfile: () => Promise<FreelancerProfile | null>;
+  saveProfile: (profile: FreelancerProfile) => Promise<FreelancerProfile>;
   signOut: () => Promise<void>;
 };
 
@@ -122,6 +133,32 @@ export function AuthProvider({ children }: PropsWithChildren) {
     }
   }
 
+  async function authorizedRequest<T>(method: 'get' | 'put', path: string, data?: unknown) {
+    const token = await readToken();
+    if (!token) throw new Error('Su sesion ha finalizado. Inicie sesion nuevamente.');
+    try {
+      const response = await axios.request<T>({
+        method,
+        url: `${API_URL}${path}`,
+        data,
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(getErrorMessage(error));
+    }
+  }
+
+  async function getProfile() {
+    const response = await authorizedRequest<{ profile: FreelancerProfile | null }>('get', '/profile');
+    return response.profile;
+  }
+
+  async function saveProfile(profile: FreelancerProfile) {
+    const response = await authorizedRequest<{ profile: FreelancerProfile }>('put', '/profile', profile);
+    return response.profile;
+  }
+
   async function signOut() {
     const token = await readToken();
     try {
@@ -138,7 +175,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
   return (
     <AuthContext.Provider
-      value={{ user, isLoading, signIn, signUp, requestPasswordReset, resetPassword, signOut }}>
+      value={{ user, isLoading, signIn, signUp, requestPasswordReset, resetPassword, getProfile, saveProfile, signOut }}>
       {children}
     </AuthContext.Provider>
   );
