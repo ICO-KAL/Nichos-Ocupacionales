@@ -4,6 +4,7 @@ import { useColorScheme } from 'react-native';
 
 import { AuthProvider } from '@/auth/auth-context';
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
+import '../global.css';
 
 SplashScreen.preventAutoHideAsync();
 
