@@ -1,69 +1,43 @@
-# Persona 4 — Parte 1: Capa de API compartida + Publicar oferta
+# Persona 4 — Parte 2: Mis ofertas publicadas + Mis pagos
 
 ## Instalación
-No agrega paquetes nuevos — todo lo que uso (axios, expo-image-picker,
-expo-location, expo-secure-store, react-hook-form, zod) ya estaba en tu
-package.json.
+No agrega paquetes nuevos, reutiliza la capa de API de la parte 1.
 
 ## Cómo aplicar
-Descomprime en la raíz del repo (rama persona4), reemplaza si pregunta:
-- src/lib/api/ (carpeta nueva: client.ts, types.ts, catalogo.ts, uploads.ts,
-  pagos.ts, ofertas.ts)
-- src/lib/schemas/oferta-schema.ts (nuevo)
-- src/components/themed-text-input.tsx (nuevo)
-- src/app/ofertas/ (carpeta nueva: publicar.tsx, _layout.tsx)
+Descomprime en la raíz del repo (misma carpeta de siempre), reemplaza si
+pregunta:
+- src/app/mis-ofertas/ (carpeta nueva: index.tsx, [id].tsx, _layout.tsx)
+- src/app/mis-pagos.tsx (nuevo)
 
-## ⚠️ Cosa importante para TODO el equipo, no solo para ti
+## Qué cubre "Mis ofertas publicadas"
+- /mis-ofertas: lista tus ofertas (GET /me/offers), con contador de
+  aplicantes si el API lo trae, pull-to-refresh
+- /mis-ofertas/[id]: lista de aplicantes de esa oferta (GET
+  /offers/{id}/applications), cada uno con:
+  - Calificación de 1 a 5 estrellas (PATCH /applications/{id} { rating })
+  - Botones Finalista / Ganador / Descartar (PATCH ... { status })
+  - Una vez Ganador o Descartado, los botones desaparecen (son estados
+    finales — igual que hicimos con los estados de presupuesto en el
+    proyecto anterior)
 
-`src/auth/auth-context.tsx` es código del proyecto viejo abandonado (apunta
-a `localhost:3001`, usa endpoints que no existen en Ocupa2). Armé
-`src/lib/api/client.ts` desde cero siguiendo el Swagger real. Esto debería
-ser la ÚNICA capa de comunicación con el API que use todo el equipo (así lo
-pide el documento de distribución del proyecto).
-
-**Punto crítico:** guardo el JWT bajo la llave `'ocupa2.access-token'`
-(`TOKEN_KEY` en `client.ts`). Cuando Persona 2 construya el login/registro
-real (contra `/auth/register`, `/auth/login`, `/auth/verify-code`), tiene
-que guardar el token con `setToken()` de este mismo archivo — si usa su
-propia llave o su propio storage, mis pantallas (y las del resto) nunca van
-a encontrar la sesión. Avísale a Persona 2 de esto cuanto antes.
-
-## Qué cubre "Publicar oferta"
-- Tipo de empleo cargado dinámicamente desde GET /job-types (chips)
-- Tipo de contrato (temporal/fijo/horas)
-- Descripción, dirección
-- Ubicación opcional (botón "Usar mi ubicación actual", expo-location)
-- Foto OBLIGATORIA: tomar foto o elegir de galería, se sube a POST /uploads
-  al instante y la URL queda guardada; el formulario NO deja enviar sin ella
-- Fecha límite opcional
-- Preguntas adicionales dinámicas (texto, fecha, selección con opciones,
-  sí/no) — agregar/quitar libremente
-- Pago: captura tarjeta, cobra 1 USD vía POST /payments, y SOLO si el pago
-  aprueba, publica la oferta vía POST /offers con el paymentId
-
-## ⚠️ Cosas que asumí porque el Swagger no las documenta con schema exacto
-El spec describe estas respuestas solo en prosa ("Lista de tipos de
-trabajo", etc.), sin un `$ref` a un schema formal:
-- **GET /job-types**: asumí `{ key, name, customFields? }` por tarea —
-  ajusta `JobType` en `src/lib/api/types.ts` si el campo real se llama
-  distinto (ej. `label` en vez de `name`)
-- **payment.amount/currency en OfferInput**: uso lo que devuelva el pago
-  (`pago.amount`, `pago.currency`), con `1` y `'USD'` como respaldo
-
-Todo el ajuste queda centralizado en `types.ts` — si algo no calza al
-probar contra la API real, es el único archivo que hay que tocar.
+## Qué cubre "Mis pagos"
+- /mis-pagos: historial completo (GET /me/payments), con chip de estado
+  (Aprobado en verde, cualquier otro en rojo)
 
 ## Prueba esto
-1. Necesitas estar autenticado (con un JWT guardado bajo `'ocupa2.access-token'`
-   — si el login real de Persona 2 no está listo, puedes guardar un token
-   de prueba a mano desde la consola del navegador:
-   `sessionStorage.setItem('ocupa2.access-token', 'TU_JWT_AQUI')`
-2. Ve a /ofertas/publicar
-3. Llena el formulario, usa la tarjeta de prueba `4242424242424242`
-4. Debe publicar y redirigirte a /mis-ofertas (esa pantalla la construyo
-   en la siguiente entrega)
+1. Ya deberías tener al menos 1 oferta publicada de la parte anterior —
+   ve a /mis-ofertas y debe aparecer
+2. Entra a esa oferta — como todavía no hay aplicantes reales (nadie ha
+   aplicado desde otra cuenta), vas a ver "Todavía no hay aplicantes"
+3. Para probar la gestión de candidatos de verdad, necesitas que alguien
+   más (otra cuenta, quizás un compañero de equipo) aplique a tu oferta
+   usando POST /offers/{id}/apply desde el Swagger
+4. Ve a /mis-pagos — debe aparecer el pago de 1 USD que hiciste al
+   publicar, en verde ("Aprobado")
 
-## Siguiente paso
-"Mis ofertas publicadas" (listado + gestión de candidatos: calificar,
-descartar, finalista, ganador) y "Mis pagos" (historial). Dime cuando
-quieras que siga con eso.
+## ⚠️ Ajuste pendiente de verificar contra la API real
+Igual que avisé en la parte 1: `/offers/{id}/applications` y
+`/me/payments` no tienen un schema formal en el Swagger (solo "Lista de
+X" en prosa). Los campos que asumí (`applicant.nombre`, `pago.amount`,
+`pago.status`, etc.) están en `src/lib/api/types.ts` — si al probar con
+un aplicante real algún campo no calza, ese es el único archivo a tocar.
