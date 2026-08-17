@@ -5,11 +5,13 @@ import {
   useEffect,
   useState,
 } from "react";
-import { Platform } from "react-native";
 
-const API_URL =
-  process.env.EXPO_PUBLIC_API_URL ?? "https://ocupa2.ia3x.com/apix";
-const TOKEN_KEY = "ocupa2.access-token";
+import {
+  clearToken,
+  getToken as readToken,
+  requestApi,
+  setToken as saveToken,
+} from "@/lib/api/client";
 
 export type User = {
   id: string;
@@ -41,7 +43,7 @@ export type ProfileInput = {
   lastName: string;
   cedula: string;
   gender: string;
-  birthDate: string; // YYYY-MM-DD
+  birthDate: string;
 };
 
 export type Experience = {
@@ -99,6 +101,8 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+class ApiError extends Error {}
+
 function getErrorMessage(
   error: unknown,
   fallback = "No fue posible completar la solicitud. Intente nuevamente.",
@@ -107,72 +111,27 @@ function getErrorMessage(
   return fallback;
 }
 
-class ApiError extends Error {}
-
-async function readToken() {
-  if (Platform.OS === "web") {
-    return typeof window === "undefined"
-      ? null
-      : window.sessionStorage.getItem(TOKEN_KEY);
-  }
-  const secureStore = await import("expo-secure-store");
-  return secureStore.getItemAsync(TOKEN_KEY);
-}
-
-async function saveToken(token: string) {
-  if (Platform.OS === "web") {
-    window.sessionStorage.setItem(TOKEN_KEY, token);
-    return;
-  }
-  const secureStore = await import("expo-secure-store");
-  await secureStore.setItemAsync(TOKEN_KEY, token);
-}
-
-async function clearToken() {
-  if (Platform.OS === "web") {
-    window.sessionStorage.removeItem(TOKEN_KEY);
-    return;
-  }
-  const secureStore = await import("expo-secure-store");
-  await secureStore.deleteItemAsync(TOKEN_KEY);
-}
-
 async function apiRequest<T>(
-  method: "GET" | "POST" | "PUT" | "DELETE",
+  method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE",
   path: string,
   body?: unknown,
   token?: string | null,
 ): Promise<T> {
-  const headers: Record<string, string> = { Accept: "application/json" };
-  if (body !== undefined) headers["Content-Type"] = "application/json";
-  if (token) headers.Authorization = `Bearer ${token}`;
-
-  let response: Response;
   try {
-    response = await fetch(`${API_URL}${path}`, {
+    return await requestApi<T>({
       method,
-      headers,
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      path,
+      data: body,
+      token,
     });
-  } catch {
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new ApiError(error.message);
+    }
     throw new ApiError(
       "No fue posible conectar con el servidor. Verifique su conexion.",
     );
   }
-
-  const isJson = response.headers
-    .get("content-type")
-    ?.includes("application/json");
-  const payload = isJson ? await response.json().catch(() => null) : null;
-
-  if (!response.ok || !payload?.ok) {
-    throw new ApiError(
-      payload?.error ??
-        "No fue posible completar la solicitud. Intente nuevamente.",
-    );
-  }
-
-  return payload.data as T;
 }
 
 export function AuthProvider({ children }: PropsWithChildren) {

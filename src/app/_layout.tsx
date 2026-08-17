@@ -21,6 +21,7 @@ import "../global.css";
 SplashScreen.preventAutoHideAsync();
 
 const AUTH_ROUTES = ["/login", "/register", "/forgot-password"];
+const PUBLIC_ROUTES = ["/", "/about", "/news", "/videos"];
 
 function AuthGate() {
   const { user, isLoading } = useAuth();
@@ -35,14 +36,11 @@ function AuthGate() {
   }
 
   const isAuthRoute = AUTH_ROUTES.includes(pathname);
-  const isIndexRoute = pathname === "/";
+  const isPublicRoute =
+    PUBLIC_ROUTES.includes(pathname) || pathname.startsWith("/news/");
   const isCompleteProfileRoute = pathname === "/complete-profile";
 
-  if (isIndexRoute) {
-    return <Stack screenOptions={{ headerShown: false }} />;
-  }
-
-  if (!user && !isAuthRoute) {
+  if (!user && !isAuthRoute && !isPublicRoute) {
     return <Redirect href="/login" />;
   }
   if (user && isAuthRoute) {
@@ -52,7 +50,12 @@ function AuthGate() {
       />
     );
   }
-  if (user && !user.profileCompleted && !isCompleteProfileRoute) {
+  if (
+    user &&
+    !user.profileCompleted &&
+    !isCompleteProfileRoute &&
+    !isPublicRoute
+  ) {
     return <Redirect href="/complete-profile" />;
   }
   if (user && user.profileCompleted && isCompleteProfileRoute) {

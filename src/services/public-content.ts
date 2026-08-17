@@ -1,11 +1,4 @@
-import axios from 'axios';
-
-const PUBLIC_API_URL = 'https://ocupa2.ia3x.com/apix';
-
-type ApiResponse<T> = {
-  ok: boolean;
-  data: T;
-};
+import { requestApi } from '@/lib/api/client';
 
 export type NewsItem = {
   title: string;
@@ -26,22 +19,16 @@ export type Video = {
   order: number;
 };
 
-async function getPublicContent<T>(path: string) {
-  const response = await axios.get<ApiResponse<T>>(`${PUBLIC_API_URL}${path}`, {
-    timeout: 15000,
+export async function getNews(limit = 12) {
+  const payload = await requestApi<NewsItem[]>({
+    method: 'GET',
+    path: '/news',
+    params: { limit },
   });
-
-  if (!response.data.ok) {
-    throw new Error('El servicio no pudo completar la solicitud.');
-  }
-
-  return response.data.data;
+  return Array.isArray(payload) ? payload : [];
 }
 
-export function getNews(limit = 12) {
-  return getPublicContent<NewsItem[]>(`/news?limit=${limit}`);
-}
-
-export function getVideos() {
-  return getPublicContent<Video[]>('/videos');
+export async function getVideos() {
+  const payload = await requestApi<Video[]>({ method: 'GET', path: '/videos' });
+  return Array.isArray(payload) ? payload : [];
 }

@@ -45,6 +45,7 @@ export default function LoginScreen() {
       eyebrow="ACCESO SEGURO"
       footer={
         <>
+          <TextAction title="Volver al inicio" onPress={() => router.replace("/")} />
           <TextAction
             title="Olvide mi contrasena"
             onPress={() => router.push("/forgot-password")}

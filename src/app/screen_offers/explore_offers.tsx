@@ -1,4 +1,6 @@
 import { JobTypeFilter } from '@/components/ui/JobTypeFilter';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -6,7 +8,15 @@ import { OfferCard } from '../../components/ui/OfferCard';
 import { useOffersStore } from '../../store/userOffersStore';
 
 export default function ExploreOffersScreen() {
+  const router = useRouter();
   const { offers, isLoading, error, fetchOffers } = useOffersStore();
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace("/dashboard");
+  };
 
   useEffect(() => {
     fetchOffers();
@@ -31,23 +41,30 @@ export default function ExploreOffersScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Explorar Ofertas</Text>
-        <Text style={styles.subtitle}>Encuentra tu próximo trabajo temporal</Text>
-      </View>
-  
-
-      {/* Aquí irá el componente de Filtros Dinámicos más adelante */}
-      <JobTypeFilter/>
-
       <FlatList
         data={offers}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <OfferCard offer={item} />}
-        contentContainerStyle={{ padding: 16 }}
+        renderItem={({ item }) => (
+          <View style={styles.offerItem}>
+            <OfferCard offer={item} />
+          </View>
+        )}
+        contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         refreshing={isLoading}
         onRefresh={() => fetchOffers()}
+        ListHeaderComponent={
+          <View>
+            <ScreenHeader
+              title="Explorar ofertas"
+              subtitle="Encuentra tu próximo trabajo temporal"
+              onBack={handleBack}
+            />
+            <View style={styles.filterWrap}>
+              <JobTypeFilter />
+            </View>
+          </View>
+        }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>No hay ofertas disponibles en este momento.</Text>
@@ -85,18 +102,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f9fafb',
   },
-  header: {
+  listContent: {
+    paddingBottom: 20,
+  },
+  filterWrap: {
     paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8,
+    marginBottom: 8,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  subtitle: {
-    color: '#6b7280',
+  offerItem: {
+    paddingHorizontal: 16,
   },
   emptyContainer: {
     flex: 1,

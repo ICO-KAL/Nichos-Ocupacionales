@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { api } from '../backend/api';
+import { api } from '@/lib/api/client';
 import type { JobType, Offer } from '../types/offers';
 
 interface OffersState {

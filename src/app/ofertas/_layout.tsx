@@ -3,8 +3,10 @@ import { Stack } from 'expo-router';
 
 export default function OfertasLayout() {
   return (
-    <Stack>
-      <Stack.Screen name="publicar" options={{ title: 'Publicar oferta', headerShown: true }} />
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="publicar" />
+      <Stack.Screen name="index" />
+      <Stack.Screen name="[id]" />
     </Stack>
   );
 }

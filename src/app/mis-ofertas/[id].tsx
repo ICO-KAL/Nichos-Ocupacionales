@@ -1,61 +1,56 @@
-// src/app/mis-ofertas/[id].tsx
-// Ruta: /mis-ofertas/:id
-// HU "Mis ofertas publicadas": ver aplicantes, calificarlos, descartarlos
-// y seleccionar finalista/ganador.
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
-import { mostrarAlerta } from '@/lib/alert';
-import { mensajeDeError } from '@/lib/api/client';
-import { actualizarAplicacion, obtenerAplicantes } from '@/lib/api/ofertas';
-import type { Application, ApplicationStatus } from '@/lib/api/types';
+import { mensajeDeError } from "@/lib/api/client";
+import { actualizarAplicacion, obtenerAplicantes } from "@/lib/api/ofertas";
+import type { Application, ApplicationStatus } from "@/lib/api/types";
+import { mostrarAlerta } from "@/lib/alert";
+import { ScreenHeader } from "@/components/ui/ScreenHeader";
 
 const ETIQUETA_ESTADO: Record<ApplicationStatus, string> = {
-  applied: 'Aplicó',
-  discarded: 'Descartado',
-  finalist: 'Finalista',
-  winner: 'Ganador',
+  applied: "Aplicó",
+  discarded: "Descartado",
+  finalist: "Finalista",
+  winner: "Ganador",
 };
 
 export default function AplicantesScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
   const [aplicantes, setAplicantes] = useState<Application[]>([]);
   const [cargando, setCargando] = useState(true);
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace("/mis-ofertas");
+  };
 
   const cargar = useCallback(() => {
     setCargando(true);
     obtenerAplicantes(id)
       .then(setAplicantes)
-      .catch((e) => mostrarAlerta('Error', mensajeDeError(e)))
+      .catch((e) => mostrarAlerta("Error", mensajeDeError(e)))
       .finally(() => setCargando(false));
   }, [id]);
 
   useEffect(() => {
-    cargar();
+    void cargar();
   }, [cargar]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <ScreenHeader title="Aplicantes" onBack={handleBack} />
       <ScrollView contentContainerStyle={styles.scroll}>
-        <ThemedText type="title" style={styles.titulo}>
-          Aplicantes
-        </ThemedText>
-
-        {cargando && (
-          <ThemedText type="small" themeColor="textSecondary">
-            Cargando...
-          </ThemedText>
-        )}
+        {cargando && <Text style={styles.info}>Cargando...</Text>}
         {!cargando && aplicantes.length === 0 && (
-          <ThemedText type="small" themeColor="textSecondary">
-            Todavía no hay aplicantes para esta oferta.
-          </ThemedText>
+          <View style={styles.emptyCard}>
+            <Text style={styles.emptyTitle}>No hay aplicantes todavía</Text>
+            <Text style={styles.info}>Cuando alguien aplique a esta oferta, aparecerá aquí.</Text>
+          </View>
         )}
 
         {aplicantes.map((aplicante) => (
@@ -66,17 +61,13 @@ export default function AplicantesScreen() {
   );
 }
 
-// Componente propio (no un bloque suelto dentro del .map del padre) para
-// que cada tarjeta maneje su propio estado de "guardando" sin romper las
-// Rules of Hooks — mismo patrón usado en TareaFila del otro proyecto.
 function AplicanteCard({ aplicante, onCambio }: { aplicante: Application; onCambio: () => void }) {
   const [guardando, setGuardando] = useState(false);
-
   const nombre =
     aplicante.applicant?.nombre ||
-    [aplicante.applicant?.firstName, aplicante.applicant?.lastName].filter(Boolean).join(' ') ||
+    [aplicante.applicant?.firstName, aplicante.applicant?.lastName].filter(Boolean).join(" ") ||
     aplicante.applicant?.email ||
-    'Aplicante';
+    "Aplicante";
 
   const cambiarEstado = async (status: ApplicationStatus) => {
     setGuardando(true);
@@ -84,7 +75,7 @@ function AplicanteCard({ aplicante, onCambio }: { aplicante: Application; onCamb
       await actualizarAplicacion(aplicante.id, { status });
       onCambio();
     } catch (e) {
-      mostrarAlerta('Error', mensajeDeError(e));
+      mostrarAlerta("Error", mensajeDeError(e));
     } finally {
       setGuardando(false);
     }
@@ -96,89 +87,105 @@ function AplicanteCard({ aplicante, onCambio }: { aplicante: Application; onCamb
       await actualizarAplicacion(aplicante.id, { rating });
       onCambio();
     } catch (e) {
-      mostrarAlerta('Error', mensajeDeError(e));
+      mostrarAlerta("Error", mensajeDeError(e));
     } finally {
       setGuardando(false);
     }
   };
 
-  const esFinal = aplicante.status === 'winner' || aplicante.status === 'discarded';
+  const esFinal = aplicante.status === "winner" || aplicante.status === "discarded";
 
   return (
-    <ThemedView style={styles.card}>
-      <ThemedText type="default">{nombre}</ThemedText>
-      {aplicante.applicant?.email && (
-        <ThemedText type="small" themeColor="textSecondary">
-          {aplicante.applicant.email}
-        </ThemedText>
-      )}
-      <ThemedText type="small" themeColor="textSecondary" style={{ marginTop: Spacing.one }}>
-        {aplicante.comment}
-      </ThemedText>
+    <View style={styles.card}>
+      <Text style={styles.nombre}>{nombre}</Text>
+      {aplicante.applicant?.email ? <Text style={styles.info}>{aplicante.applicant.email}</Text> : null}
+      {aplicante.comment ? <Text style={styles.comentario}>“{aplicante.comment}”</Text> : null}
 
-      <ThemedView style={styles.filaEstrellas}>
-        {[1, 2, 3, 4, 5].map((n) => (
-          <Pressable key={n} onPress={() => calificar(n)} disabled={guardando} hitSlop={4}>
-            <ThemedText type="default" themeColor={(aplicante.rating ?? 0) >= n ? 'text' : 'textSecondary'}>
-              ★
-            </ThemedText>
-          </Pressable>
-        ))}
-      </ThemedView>
+      <View style={styles.filaEstrellas}>
+        {[1, 2, 3, 4, 5].map((n) => {
+          const active = (aplicante.rating ?? 0) >= n;
+          return (
+            <Pressable key={n} onPress={() => calificar(n)} disabled={guardando} hitSlop={4}>
+              <Text style={[styles.estrella, active && styles.estrellaActiva]}>★</Text>
+            </Pressable>
+          );
+        })}
+      </View>
 
-      <ThemedText type="small" style={styles.estadoActual}>
+      <Text style={styles.estadoActual}>
         Estado: {ETIQUETA_ESTADO[aplicante.status] ?? aplicante.status}
-      </ThemedText>
+      </Text>
 
       {!esFinal && (
-        <ThemedView style={styles.filaBotones}>
-          <Pressable style={styles.botonChico} onPress={() => cambiarEstado('finalist')} disabled={guardando}>
-            <ThemedText type="small" themeColor="background">
-              Finalista
-            </ThemedText>
+        <View style={styles.filaBotones}>
+          <Pressable
+            style={({ pressed }) => [styles.boton, styles.botonFinalista, pressed && styles.pressed]}
+            onPress={() => cambiarEstado("finalist")}
+            disabled={guardando}
+          >
+            <Text style={styles.botonText}>Finalista</Text>
           </Pressable>
           <Pressable
-            style={[styles.botonChico, styles.botonVerde]}
-            onPress={() => cambiarEstado('winner')}
-            disabled={guardando}>
-            <ThemedText type="small" themeColor="background">
-              Ganador
-            </ThemedText>
+            style={({ pressed }) => [styles.boton, styles.botonGanador, pressed && styles.pressed]}
+            onPress={() => cambiarEstado("winner")}
+            disabled={guardando}
+          >
+            <Text style={styles.botonText}>Ganador</Text>
           </Pressable>
           <Pressable
-            style={[styles.botonChico, styles.botonRojo]}
-            onPress={() => cambiarEstado('discarded')}
-            disabled={guardando}>
-            <ThemedText type="small" themeColor="background">
-              Descartar
-            </ThemedText>
+            style={({ pressed }) => [styles.boton, styles.botonDescartar, pressed && styles.pressed]}
+            onPress={() => cambiarEstado("discarded")}
+            disabled={guardando}
+          >
+            <Text style={styles.botonText}>Descartar</Text>
           </Pressable>
-        </ThemedView>
+        </View>
       )}
-    </ThemedView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, minHeight: 0 },
-  scroll: { padding: Spacing.four, gap: Spacing.two, paddingBottom: Spacing.six },
-  titulo: { fontSize: 24, lineHeight: 28, marginBottom: Spacing.two },
+  safeArea: { flex: 1, backgroundColor: "#F4F7F8" },
+  scroll: { paddingHorizontal: 16, paddingBottom: 28, gap: 10 },
+  emptyCard: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#D9E2EC",
+    borderRadius: 12,
+    padding: 16,
+    gap: 6,
+  },
+  emptyTitle: { color: "#102A43", fontSize: 18, fontWeight: "800" },
+  info: { color: "#526B7A", fontSize: 14 },
   card: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#8888',
-    borderRadius: Spacing.two,
-    padding: Spacing.three,
-    gap: 2,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#D9E2EC",
+    borderRadius: 12,
+    padding: 12,
+    gap: 6,
   },
-  filaEstrellas: { flexDirection: 'row', gap: Spacing.one, marginTop: Spacing.two },
-  estadoActual: { marginTop: Spacing.two },
-  filaBotones: { flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.two, flexWrap: 'wrap' },
-  botonChico: {
-    backgroundColor: '#3c87f7',
-    paddingVertical: Spacing.one,
-    paddingHorizontal: Spacing.two,
-    borderRadius: Spacing.two,
+  nombre: { color: "#102A43", fontSize: 16, fontWeight: "800" },
+  comentario: {
+    color: "#486581",
+    fontSize: 13,
+    fontStyle: "italic",
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    borderRadius: 8,
+    padding: 8,
   },
-  botonVerde: { backgroundColor: '#16a34a' },
-  botonRojo: { backgroundColor: '#dc2626' },
+  filaEstrellas: { flexDirection: "row", gap: 8, marginTop: 2 },
+  estrella: { color: "#94A3B8", fontSize: 20 },
+  estrellaActiva: { color: "#F59E0B" },
+  estadoActual: { color: "#334E68", marginTop: 4, fontSize: 13, fontWeight: "600" },
+  filaBotones: { flexDirection: "row", gap: 8, flexWrap: "wrap", marginTop: 6 },
+  boton: { borderRadius: 8, minHeight: 36, justifyContent: "center", paddingHorizontal: 12 },
+  botonText: { color: "#FFFFFF", fontSize: 12, fontWeight: "800" },
+  botonFinalista: { backgroundColor: "#7C3AED" },
+  botonGanador: { backgroundColor: "#16A34A" },
+  botonDescartar: { backgroundColor: "#DC2626" },
+  pressed: { opacity: 0.75 },
 });

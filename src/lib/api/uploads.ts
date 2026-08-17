@@ -2,7 +2,7 @@
 // POST /uploads: envía la imagen en base64 (o data URI) en el campo `image`.
 // Devuelve la URL pública que luego va en OfferInput.photo.
 
-import { apiClient, desenvolver } from './client';
+import { requestApi } from './client';
 
 interface RespuestaUpload {
   key: string;
@@ -12,7 +12,10 @@ interface RespuestaUpload {
 }
 
 export async function subirImagen(base64OuDataUri: string, filename?: string): Promise<string> {
-  const { data } = await apiClient.post('/uploads', { image: base64OuDataUri, filename });
-  const resultado = desenvolver<RespuestaUpload>(data);
+  const resultado = await requestApi<RespuestaUpload>({
+    method: 'POST',
+    path: '/uploads',
+    data: { image: base64OuDataUri, filename },
+  });
   return resultado.url;
 }

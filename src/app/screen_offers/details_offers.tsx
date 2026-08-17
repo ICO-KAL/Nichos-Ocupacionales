@@ -1,8 +1,9 @@
-import { api } from '@/backend/api';
+import { api, mensajeDeError } from '@/lib/api/client';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import type { Offer } from '@/types/offers';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 //import { useStyles } from 'nativewind';
@@ -11,6 +12,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 export default function OfferDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace('/ofertas');
+  };
 
   const [offer, setOffer] = useState<Offer | null>(null);
   const [loading, setLoading] = useState(true);
@@ -20,22 +28,22 @@ export default function OfferDetailScreen() {
   const [comment, setComment] = useState('');
   const [answers, setAnswers] = useState<Record<string, any>>({});
 
-  useEffect(() => {
-    fetchOfferDetail();
-  }, [id]);
-
-  const fetchOfferDetail = async () => {
+  const fetchOfferDetail = useCallback(async () => {
     try {
       const response = await api.get(`/offers/${id}`);
       if (response.data?.ok) {
         setOffer(response.data.data);
       }
-    } catch (err: any) {
+    } catch {
       Alert.alert('Error', 'No se pudo cargar el detalle de la oferta.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    void fetchOfferDetail();
+  }, [fetchOfferDetail]);
 
   const handleAnswerChange = (questionId: string, value: any) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
@@ -65,11 +73,8 @@ export default function OfferDetailScreen() {
           { text: 'OK', onPress: () => router.back() },
         ]);
       }
-    } catch (err: any) {
-      Alert.alert(
-        'Error al aplicar',
-        err.response?.data?.message || 'No se pudo procesar la postulación.'
-      );
+    } catch (err) {
+      Alert.alert('Error al aplicar', mensajeDeError(err));
     } finally {
       setSubmitting(false);
     }
@@ -93,6 +98,7 @@ export default function OfferDetailScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-white">
+      <ScreenHeader title="Detalle de oferta" onBack={handleBack} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
         {/* Imagen principal */}
         <Image source={{ uri: offer.photo }} className="w-full h-56 bg-gray-200" contentFit="cover" />

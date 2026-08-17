@@ -59,11 +59,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: '#f3f4f6',
-    shadowColor: '#000000',
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 2,
+    boxShadow: '0px 1px 6px rgba(0, 0, 0, 0.05)',
   },
   image: {
     width: '100%',

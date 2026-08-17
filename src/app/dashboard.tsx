@@ -12,6 +12,14 @@ import {
 
 import { Experience, useAuth } from "@/auth/auth-context";
 
+const APARTADOS = [
+  { label: "Explorar ofertas", route: "/ofertas" as const },
+  { label: "Mis aplicaciones", route: "/tabs/applications" as const },
+  { label: "Publicar oferta", route: "/ofertas/publicar" as const },
+  { label: "Mis ofertas publicadas", route: "/mis-ofertas" as const },
+  { label: "Mis pagos", route: "/mis-pagos" as const },
+];
+
 export default function DashboardScreen() {
   const { user, isLoading, signOut, getExperiences } = useAuth();
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -61,7 +69,7 @@ export default function DashboardScreen() {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <View>
-          <Text style={styles.brand}>OCUPA2</Text>
+          <Text style={styles.brand}>INNOVATECH SOLUTIONS</Text>
           <Text style={styles.overline}>MI CUENTA</Text>
         </View>
         <Pressable
@@ -142,6 +150,24 @@ export default function DashboardScreen() {
               Ver todas mis experiencias
             </Text>
           </Pressable>
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Apartados</Text>
+          <View style={styles.quickLinks}>
+            {APARTADOS.map((apartado) => (
+              <Pressable
+                key={apartado.route}
+                onPress={() => router.push(apartado.route)}
+                style={({ pressed }) => [
+                  styles.apartadoButton,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Text style={styles.apartadoButtonText}>{apartado.label}</Text>
+              </Pressable>
+            ))}
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -245,5 +271,20 @@ const styles = StyleSheet.create({
   experienceTitle: { color: "#102A43", fontSize: 15, fontWeight: "700" },
   experienceDescription: { color: "#627D98", fontSize: 13, marginTop: 2 },
   error: { color: "#B91C1C", fontSize: 13, fontWeight: "700" },
+  quickLinks: { gap: 10, paddingTop: 4 },
+  apartadoButton: {
+    minHeight: 44,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#D9E2EC",
+    backgroundColor: "#F8FAFC",
+    justifyContent: "center",
+    paddingHorizontal: 14,
+  },
+  apartadoButtonText: {
+    color: "#0E7490",
+    fontSize: 14,
+    fontWeight: "800",
+  },
   pressed: { opacity: 0.65 },
 });

@@ -17,12 +17,12 @@ import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { Image, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedTextInput } from '@/components/themed-text-input';
-import { ThemedView } from '@/components/themed-view';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { mostrarAlerta } from '@/lib/alert';
 import { Spacing } from '@/constants/theme';
 import { obtenerTiposDeEmpleo } from '@/lib/api/catalogo';
@@ -56,6 +56,13 @@ export default function PublicarOfertaScreen() {
   const [buscandoUbicacion, setBuscandoUbicacion] = useState(false);
   const [preguntas, setPreguntas] = useState<OfferQuestionInput[]>([]);
   const [publicando, setPublicando] = useState(false);
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace('/mis-ofertas');
+  };
 
   useEffect(() => {
     obtenerTiposDeEmpleo()
@@ -201,10 +208,8 @@ export default function PublicarOfertaScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView style={{ flex: 1, minHeight: 0 }} contentContainerStyle={styles.scroll}>
-        <ThemedText type="title" style={styles.titulo}>
-          Publicar oferta
-        </ThemedText>
-
+        <ScreenHeader title="Publicar oferta" onBack={handleBack} />
+        <View style={styles.formCard}>
         <ThemedText type="small" themeColor="textSecondary">
           Tipo de empleo
         </ThemedText>
@@ -223,9 +228,9 @@ export default function PublicarOfertaScreen() {
                     key={t.key}
                     onPress={() => onChange(t.key)}
                     style={[styles.chip, value === t.key && styles.chipActivo]}>
-                    <ThemedText type="small" themeColor={value === t.key ? 'background' : 'text'}>
+                    <Text style={[styles.chipText, value === t.key && styles.chipTextActive]}>
                       {t.name}
-                    </ThemedText>
+                    </Text>
                   </Pressable>
                 ))}
               </ScrollView>
@@ -241,18 +246,18 @@ export default function PublicarOfertaScreen() {
           control={control}
           name="contractType"
           render={({ field: { onChange, value } }) => (
-            <ThemedView style={styles.filaChips}>
+            <View style={styles.filaChips}>
               {TIPOS_CONTRATO.map((t) => (
                 <Pressable
                   key={t.value}
                   onPress={() => onChange(t.value)}
                   style={[styles.chip, value === t.value && styles.chipActivo]}>
-                  <ThemedText type="small" themeColor={value === t.value ? 'background' : 'text'}>
+                  <Text style={[styles.chipText, value === t.value && styles.chipTextActive]}>
                     {t.label}
-                  </ThemedText>
+                  </Text>
                 </Pressable>
               ))}
-            </ThemedView>
+            </View>
           )}
         />
         {errors.contractType && <ThemedText style={styles.errorTexto}>{errors.contractType.message}</ThemedText>}
@@ -292,27 +297,27 @@ export default function PublicarOfertaScreen() {
           Ubicación (opcional)
         </ThemedText>
         <Pressable style={styles.botonSecundario} onPress={usarUbicacionActual} disabled={buscandoUbicacion}>
-          <ThemedText type="small">
+          <Text style={styles.secondaryBtnText}>
             {buscandoUbicacion
               ? 'Buscando...'
               : ubicacion
                 ? `Ubicación: ${ubicacion.lat.toFixed(4)}, ${ubicacion.lng.toFixed(4)}`
                 : 'Usar mi ubicación actual'}
-          </ThemedText>
+          </Text>
         </Pressable>
 
         <ThemedText type="small" themeColor="textSecondary" style={styles.seccion}>
           Foto (obligatoria)
         </ThemedText>
         {fotoPreview && <Image source={{ uri: fotoPreview }} style={styles.preview} />}
-        <ThemedView style={styles.filaChips}>
+        <View style={styles.filaChips}>
           <Pressable style={styles.botonSecundario} onPress={() => subirDesde('camara')} disabled={subiendoFoto}>
-            <ThemedText type="small">Tomar foto</ThemedText>
+            <Text style={styles.secondaryBtnText}>Tomar foto</Text>
           </Pressable>
           <Pressable style={styles.botonSecundario} onPress={() => subirDesde('galeria')} disabled={subiendoFoto}>
-            <ThemedText type="small">Elegir de galería</ThemedText>
+            <Text style={styles.secondaryBtnText}>Elegir de galería</Text>
           </Pressable>
-        </ThemedView>
+        </View>
         {subiendoFoto && (
           <ThemedText type="small" themeColor="textSecondary">
             Subiendo foto...
@@ -333,37 +338,37 @@ export default function PublicarOfertaScreen() {
 
         {/* Campos personalizados del tipo de empleo seleccionado, si el API los trae */}
         {tipoSeleccionado?.customFields && tipoSeleccionado.customFields.length > 0 && (
-          <ThemedView style={styles.aviso}>
+          <View style={styles.aviso}>
             <ThemedText type="small">
               Este tipo de empleo trae campos personalizados ({tipoSeleccionado.customFields.map((c) => c.label).join(', ')}).
               Captúralos como preguntas adicionales abajo si aplica.
             </ThemedText>
-          </ThemedView>
+          </View>
         )}
 
         <ThemedText type="subtitle" style={styles.seccionGrande}>
           Preguntas adicionales
         </ThemedText>
         {preguntas.map((pregunta, index) => (
-          <ThemedView key={index} style={styles.preguntaCard}>
+          <View key={index} style={styles.preguntaCard}>
             <ThemedTextInput
               placeholder="Texto de la pregunta"
               value={pregunta.label}
               onChangeText={(v) => actualizarPregunta(index, { label: v })}
               style={styles.input}
             />
-            <ThemedView style={styles.filaChips}>
+            <View style={styles.filaChips}>
               {TIPOS_PREGUNTA.map((t) => (
                 <Pressable
                   key={t.value}
                   onPress={() => actualizarPregunta(index, { type: t.value })}
                   style={[styles.chipChico, pregunta.type === t.value && styles.chipActivo]}>
-                  <ThemedText type="small" themeColor={pregunta.type === t.value ? 'background' : 'text'}>
+                  <Text style={[styles.chipText, pregunta.type === t.value && styles.chipTextActive]}>
                     {t.label}
-                  </ThemedText>
+                  </Text>
                 </Pressable>
               ))}
-            </ThemedView>
+            </View>
             {pregunta.type === 'select' && (
               <ThemedTextInput
                 placeholder="Opciones separadas por coma"
@@ -379,7 +384,7 @@ export default function PublicarOfertaScreen() {
                 Quitar pregunta
               </ThemedText>
             </Pressable>
-          </ThemedView>
+          </View>
         ))}
         <Pressable onPress={agregarPregunta}>
           <ThemedText type="linkPrimary">+ Agregar pregunta</ThemedText>
@@ -405,7 +410,7 @@ export default function PublicarOfertaScreen() {
           )}
         />
         {errors.cardNumber && <ThemedText style={styles.errorTexto}>{errors.cardNumber.message}</ThemedText>}
-        <ThemedView style={styles.filaChips}>
+        <View style={styles.filaChips}>
           <Controller
             control={control}
             name="cvv"
@@ -445,7 +450,7 @@ export default function PublicarOfertaScreen() {
               />
             )}
           />
-        </ThemedView>
+        </View>
         {(errors.cvv || errors.expMonth || errors.expYear) && (
           <ThemedText style={styles.errorTexto}>
             {errors.cvv?.message || errors.expMonth?.message || errors.expYear?.message}
@@ -469,39 +474,60 @@ export default function PublicarOfertaScreen() {
             {publicando ? 'Publicando...' : 'Pagar y publicar'}
           </ThemedText>
         </Pressable>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, minHeight: 0 },
-  scroll: { padding: Spacing.four, gap: Spacing.one, paddingBottom: Spacing.six },
-  titulo: { fontSize: 24, lineHeight: 28, marginBottom: Spacing.two },
-  seccion: { marginTop: Spacing.three },
-  seccionGrande: { fontSize: 18, lineHeight: 22, marginTop: Spacing.five, marginBottom: Spacing.one },
-  chips: { flexDirection: 'row', marginTop: Spacing.one },
-  filaChips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two, marginTop: Spacing.one },
+  safeArea: { flex: 1, minHeight: 0, backgroundColor: '#EEF3F7' },
+  scroll: { paddingBottom: Spacing.six },
+  formCard: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D9E2EC',
+    borderRadius: 16,
+    marginHorizontal: Spacing.four,
+    marginBottom: Spacing.four,
+    padding: Spacing.four,
+    gap: Spacing.one,
+  },
+  seccion: { marginTop: Spacing.three, color: '#486581', fontWeight: '700' },
+  seccionGrande: { fontSize: 18, lineHeight: 22, marginTop: Spacing.five, marginBottom: Spacing.one, color: '#102A43', fontWeight: '800' },
+  chips: { flexDirection: 'row', marginTop: Spacing.one, marginBottom: Spacing.one },
+  filaChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
+    marginTop: Spacing.one,
+    backgroundColor: 'transparent',
+  },
   chip: {
+    backgroundColor: '#F8FAFC',
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.three,
-    borderRadius: 16,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#8888',
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#C4D4E3',
     marginRight: Spacing.two,
   },
   chipChico: {
+    backgroundColor: '#F8FAFC',
     paddingVertical: Spacing.one,
     paddingHorizontal: Spacing.two,
-    borderRadius: 14,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#8888',
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#C4D4E3',
   },
-  chipActivo: { backgroundColor: '#3c87f7', borderColor: '#3c87f7' },
+  chipActivo: { backgroundColor: '#0E7490', borderColor: '#0E7490' },
+  chipText: { color: '#334E68', fontSize: 14, fontWeight: '600' },
+  chipTextActive: { color: '#FFFFFF' },
   input: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#8888',
-    borderRadius: Spacing.two,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#C4D4E3',
+    borderRadius: 10,
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.three,
     fontSize: 15,
@@ -510,33 +536,38 @@ const styles = StyleSheet.create({
   inputMultilinea: { minHeight: 90, textAlignVertical: 'top' },
   errorTexto: { color: '#e5484d', fontSize: 13, marginTop: 2 },
   botonSecundario: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#8888',
-    borderRadius: Spacing.two,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#C4D4E3',
+    borderRadius: 10,
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.three,
     alignItems: 'center',
     marginTop: Spacing.one,
   },
-  preview: { width: '100%', height: 180, borderRadius: Spacing.two, marginTop: Spacing.one },
+  secondaryBtnText: { color: '#334E68', fontSize: 14, fontWeight: '600' },
+  preview: { width: '100%', height: 180, borderRadius: 10, marginTop: Spacing.one },
   aviso: {
-    backgroundColor: '#3c87f71a',
-    borderRadius: Spacing.two,
+    backgroundColor: '#E0F2FE',
+    borderRadius: 10,
     padding: Spacing.two,
     marginTop: Spacing.two,
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
   },
   preguntaCard: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#8888',
-    borderRadius: Spacing.two,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#D9E2EC',
+    borderRadius: 10,
     padding: Spacing.two,
     marginTop: Spacing.two,
     gap: Spacing.one,
   },
   botonPrincipal: {
-    backgroundColor: '#16a34a',
+    backgroundColor: '#0E7490',
     paddingVertical: Spacing.three,
-    borderRadius: Spacing.two,
+    borderRadius: 12,
     alignItems: 'center',
     marginTop: Spacing.five,
   },
