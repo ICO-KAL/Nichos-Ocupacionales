@@ -16,6 +16,7 @@ import {
 
 import { AuthProvider, useAuth } from "@/auth/auth-context";
 import { AnimatedSplashOverlay } from "@/components/animated-icon";
+import "../global.css";
 
 SplashScreen.preventAutoHideAsync();
 
