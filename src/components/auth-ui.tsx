@@ -130,6 +130,11 @@ export function ErrorMessage({ message }: { message: string | null }) {
   return <Text style={styles.error}>{message}</Text>;
 }
 
+export function SuccessMessage({ message }: { message: string | null }) {
+  if (!message) return null;
+  return <Text style={styles.success}>{message}</Text>;
+}
+
 export function TextAction({
   title,
   onPress,
@@ -217,6 +222,14 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     color: "#9B1C1C",
     backgroundColor: "#FDE8E8",
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  success: {
+    padding: 12,
+    borderRadius: 6,
+    color: "#166534",
+    backgroundColor: "#DCFCE7",
     fontSize: 14,
     lineHeight: 20,
   },

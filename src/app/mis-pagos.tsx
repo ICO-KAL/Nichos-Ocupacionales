@@ -6,19 +6,20 @@ import {
   StyleSheet,
   Text,
   View,
+  Pressable,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { mensajeDeError } from "@/lib/api/client";
 import { obtenerMisPagos } from "@/lib/api/pagos";
 import type { Payment } from "@/lib/api/types";
-import { mostrarAlerta } from "@/lib/alert";
 import { ScreenHeader } from "@/components/ui/ScreenHeader";
 
 export default function MisPagosScreen() {
   const router = useRouter();
   const [pagos, setPagos] = useState<Payment[]>([]);
   const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const handleBack = () => {
     if (router.canGoBack()) {
       router.back();
@@ -29,9 +30,10 @@ export default function MisPagosScreen() {
 
   const cargar = useCallback(() => {
     setCargando(true);
+    setError(null);
     obtenerMisPagos()
       .then(setPagos)
-      .catch((e) => mostrarAlerta("Error", mensajeDeError(e)))
+      .catch((e) => setError(mensajeDeError(e)))
       .finally(() => setCargando(false));
   }, []);
 
@@ -44,16 +46,28 @@ export default function MisPagosScreen() {
         refreshControl={<RefreshControl refreshing={cargando} onRefresh={cargar} />}
       >
         <ScreenHeader title="Mis pagos" onBack={handleBack} />
-        {!cargando && pagos.length === 0 && (
+        {cargando && pagos.length === 0 ? (
+          <View style={styles.stateCard}>
+            <Text style={styles.stateText}>Cargando historial de pagos...</Text>
+          </View>
+        ) : error ? (
+          <View style={styles.errorCard}>
+            <Text style={styles.errorTitle}>No pudimos cargar tus pagos</Text>
+            <Text style={styles.errorText}>{error}</Text>
+            <Pressable onPress={cargar} style={styles.retryButton}>
+              <Text style={styles.retryButtonText}>Reintentar</Text>
+            </Pressable>
+          </View>
+        ) : pagos.length === 0 ? (
           <View style={styles.emptyCard}>
             <Text style={styles.emptyTitle}>No tienes pagos registrados</Text>
             <Text style={styles.emptyText}>
               Cuando realices transacciones, las verás listadas aquí.
             </Text>
           </View>
-        )}
+        ) : null}
 
-        {pagos.map((pago) => (
+        {!error && pagos.map((pago) => (
           <View key={pago.id} style={styles.fila}>
             <View style={styles.info}>
               <Text style={styles.monto}>
@@ -84,7 +98,15 @@ export default function MisPagosScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "#F4F7F8" },
-  lista: { gap: 10, paddingHorizontal: 16, paddingBottom: 28 },
+  lista: { gap: 10, width: "100%", maxWidth: 720, alignSelf: "center", paddingHorizontal: 16, paddingBottom: 28 },
+  stateCard: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#D9E2EC",
+    borderRadius: 12,
+    padding: 16,
+  },
+  stateText: { color: "#526B7A", fontSize: 14, textAlign: "center" },
   emptyCard: {
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
@@ -95,6 +117,25 @@ const styles = StyleSheet.create({
   },
   emptyTitle: { color: "#102A43", fontWeight: "800", fontSize: 18 },
   emptyText: { color: "#526B7A", fontSize: 14, lineHeight: 20 },
+  errorCard: {
+    backgroundColor: "#FEF2F2",
+    borderWidth: 1,
+    borderColor: "#FECACA",
+    borderRadius: 12,
+    padding: 16,
+  },
+  errorTitle: { color: "#991B1B", fontSize: 16, fontWeight: "800" },
+  errorText: { color: "#B91C1C", fontSize: 14, lineHeight: 20, marginTop: 4 },
+  retryButton: {
+    alignSelf: "flex-start",
+    minHeight: 40,
+    marginTop: 12,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    justifyContent: "center",
+    backgroundColor: "#B91C1C",
+  },
+  retryButtonText: { color: "#FFFFFF", fontSize: 14, fontWeight: "800" },
   fila: {
     backgroundColor: "#FFFFFF",
     borderWidth: 1,

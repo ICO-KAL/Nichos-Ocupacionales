@@ -13,11 +13,31 @@ import {
 import { Experience, useAuth } from "@/auth/auth-context";
 
 const APARTADOS = [
-  { label: "Explorar ofertas", route: "/ofertas" as const },
-  { label: "Mis aplicaciones", route: "/tabs/applications" as const },
-  { label: "Publicar oferta", route: "/ofertas/publicar" as const },
-  { label: "Mis ofertas publicadas", route: "/mis-ofertas" as const },
-  { label: "Mis pagos", route: "/mis-pagos" as const },
+  {
+    label: "Explorar ofertas",
+    detail: "Encuentra oportunidades activas cerca de ti",
+    route: "/ofertas" as const,
+  },
+  {
+    label: "Mis aplicaciones",
+    detail: "Consulta el estado de tus postulaciones",
+    route: "/tabs/applications" as const,
+  },
+  {
+    label: "Publicar oferta",
+    detail: "Crea una oportunidad y completa su publicación",
+    route: "/ofertas/publicar" as const,
+  },
+  {
+    label: "Mis ofertas publicadas",
+    detail: "Revisa y selecciona candidatos",
+    route: "/mis-ofertas" as const,
+  },
+  {
+    label: "Mis pagos",
+    detail: "Consulta tus cobros y su estado",
+    route: "/mis-pagos" as const,
+  },
 ];
 
 export default function DashboardScreen() {
@@ -159,12 +179,19 @@ export default function DashboardScreen() {
               <Pressable
                 key={apartado.route}
                 onPress={() => router.push(apartado.route)}
+                android_ripple={{ color: "#CFFAFE" }}
+                accessibilityRole="button"
+                accessibilityLabel={apartado.label}
                 style={({ pressed }) => [
                   styles.apartadoButton,
                   pressed && styles.pressed,
                 ]}
               >
-                <Text style={styles.apartadoButtonText}>{apartado.label}</Text>
+                <View style={styles.apartadoCopy}>
+                  <Text style={styles.apartadoButtonText}>{apartado.label}</Text>
+                  <Text style={styles.apartadoDetail}>{apartado.detail}</Text>
+                </View>
+                <Text style={styles.apartadoArrow}>›</Text>
               </Pressable>
             ))}
           </View>
@@ -273,18 +300,37 @@ const styles = StyleSheet.create({
   error: { color: "#B91C1C", fontSize: 13, fontWeight: "700" },
   quickLinks: { gap: 10, paddingTop: 4 },
   apartadoButton: {
-    minHeight: 44,
-    borderRadius: 8,
+    minHeight: 68,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: "#D9E2EC",
     backgroundColor: "#F8FAFC",
-    justifyContent: "center",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 14,
+    overflow: "hidden",
+  },
+  apartadoCopy: {
+    flex: 1,
+    paddingRight: 12,
   },
   apartadoButtonText: {
     color: "#0E7490",
     fontSize: 14,
     fontWeight: "800",
+  },
+  apartadoDetail: {
+    color: "#627D98",
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 2,
+  },
+  apartadoArrow: {
+    color: "#0E7490",
+    fontSize: 28,
+    fontWeight: "400",
+    includeFontPadding: false,
   },
   pressed: { opacity: 0.65 },
 });

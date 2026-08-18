@@ -10,10 +10,10 @@ export interface Payment {
 }
 
 export interface Question {
-  id: string;
+  id?: string;
   label: string;
   type: "text" | "select" | "date" | "check"; 
-  required: boolean;
+  required?: boolean;
   options?: string[]; // Solo presente si el tipo es "select" o "check"
 }
 
@@ -29,7 +29,7 @@ export interface Offer {
   photo: string;
   deadline: string;
   customAnswers: Record<string, string>;
-  questions: Question[];
+  questions?: Question[];
   status: string;
   applicantsCount: number;
   likesCount: number;

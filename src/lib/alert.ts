@@ -8,7 +8,7 @@
 // (y si tienen tiempo, migren las viejas) para que los mensajes sí se vean
 // tanto en el celular como en el navegador durante las pruebas.
 
-import { Alert as AlertNativo, Platform } from 'react-native';
+import { mostrarToast } from '@/components/toast';
 
 interface BotonAlerta {
   text?: string;
@@ -17,23 +17,13 @@ interface BotonAlerta {
 }
 
 export function mostrarAlerta(titulo: string, mensaje?: string, botones?: BotonAlerta[]): void {
-  if (Platform.OS === 'web') {
-    const texto = mensaje ? `${titulo}\n\n${mensaje}` : titulo;
-
-    if (botones && botones.length > 1) {
-      // Con 2+ botones (ej. Cancelar/Confirmar), usamos confirm() del navegador.
-      const aceptado = window.confirm(texto);
-      const boton = aceptado
-        ? (botones.find((b) => b.style !== 'cancel') ?? botones[botones.length - 1])
-        : botones.find((b) => b.style === 'cancel');
-      boton?.onPress?.();
-      return;
-    }
-
-    window.alert(texto);
-    botones?.[0]?.onPress?.();
-    return;
-  }
-
-  AlertNativo.alert(titulo, mensaje, botones);
+  const normalizedTitle = titulo.toLowerCase();
+  const type =
+    normalizedTitle.includes('error') || normalizedTitle.includes('rechaz')
+      ? 'error'
+      : normalizedTitle.includes('permiso') || normalizedTitle.includes('revisa')
+        ? 'warning'
+        : 'success';
+  mostrarToast(titulo, mensaje, type);
+  botones?.find((button) => button.style !== 'cancel')?.onPress?.();
 }

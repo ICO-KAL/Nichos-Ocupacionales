@@ -76,7 +76,7 @@ const id = (prefix: string) =>
   `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
 function seedDb(): LocalDb {
-  const defaultJobTypes: Array<JobType & Record<string, unknown>> = [
+  const defaultJobTypes: (JobType & Record<string, unknown>)[] = [
     {
       id: "jt_delivery",
       key: "delivery",
@@ -345,11 +345,17 @@ export async function requestLocalJson<T>(args: {
   }
 
   if (method === "POST" && path === "/uploads") {
+    const body = args.data as { image?: unknown };
+    if (typeof body.image !== "string" || !body.image.startsWith("data:image/")) {
+      throw new Error("La imagen seleccionada no tiene un formato válido.");
+    }
     return {
       key: id("upload"),
-      url: `https://local-json.invalid/uploads/${id("img")}.jpg`,
+      // AsyncStorage conserva el data URI para que las imágenes locales se
+      // puedan renderizar también en web, sin depender de una URL ficticia.
+      url: body.image,
       mime: "image/jpeg",
-      size: 0,
+      size: body.image.length,
     } as T;
   }
 
@@ -500,6 +506,28 @@ export async function requestLocalJson<T>(args: {
     if (body.status) app.status = body.status;
     await writeDb(db);
     return app as T;
+  }
+
+  if (method === "DELETE" && /^\/applications\/[^/]+$/.test(path)) {
+    const user = requireUser(db, args.token);
+    const appId = path.split("/")[2];
+    const applicationIndex = db.applications.findIndex((app) => app.id === appId);
+    const application = db.applications[applicationIndex];
+    if (!application) throw new Error("No se encontró el recurso.");
+    if (application.applicantId !== user.id) {
+      throw new Error("No tienes permiso para hacer esto.");
+    }
+    if (application.status !== "applied") {
+      throw new Error("Solo puedes cancelar postulaciones que están en revisión.");
+    }
+
+    db.applications.splice(applicationIndex, 1);
+    const offer = db.offers.find((item) => item.id === application.offerId);
+    if (offer) {
+      offer.applicationsCount = Math.max(0, (offer.applicationsCount ?? 1) - 1);
+    }
+    await writeDb(db);
+    return { deleted: true } as T;
   }
 
   if (method === "POST" && /^\/offers\/[^/]+\/deactivate$/.test(path)) {

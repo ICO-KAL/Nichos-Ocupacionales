@@ -57,6 +57,7 @@ export interface OfferInput {
 export interface Offer {
   id: string;
   jobTypeKey: string;
+  jobTypeName?: string;
   contractType: ContractType;
   description: string;
   address: string;

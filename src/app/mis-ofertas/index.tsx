@@ -13,13 +13,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { mensajeDeError } from "@/lib/api/client";
 import { obtenerMisOfertas } from "@/lib/api/ofertas";
 import type { Offer } from "@/lib/api/types";
-import { mostrarAlerta } from "@/lib/alert";
 import { ScreenHeader } from "@/components/ui/ScreenHeader";
 
 export default function MisOfertasScreen() {
   const router = useRouter();
   const [ofertas, setOfertas] = useState<Offer[]>([]);
   const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const handleBack = () => {
     if (router.canGoBack()) {
       router.back();
@@ -30,9 +30,10 @@ export default function MisOfertasScreen() {
 
   const cargar = useCallback(() => {
     setCargando(true);
+    setError(null);
     obtenerMisOfertas()
       .then(setOfertas)
-      .catch((e) => mostrarAlerta("Error", mensajeDeError(e)))
+      .catch((e) => setError(mensajeDeError(e)))
       .finally(() => setCargando(false));
   }, []);
 
@@ -55,7 +56,21 @@ export default function MisOfertasScreen() {
             </Link>
           }
         />
-        {ofertas.length === 0 && !cargando && (
+        {cargando && ofertas.length === 0 ? (
+          <View style={styles.stateCard}>
+            <Text style={styles.stateText}>Cargando tus ofertas...</Text>
+          </View>
+        ) : null}
+        {error ? (
+          <View style={styles.errorCard}>
+            <Text style={styles.errorTitle}>No pudimos cargar tus ofertas</Text>
+            <Text style={styles.errorText}>{error}</Text>
+            <Pressable onPress={cargar} style={styles.retryButton}>
+              <Text style={styles.retryButtonText}>Reintentar</Text>
+            </Pressable>
+          </View>
+        ) : null}
+        {ofertas.length === 0 && !cargando && !error && (
           <View style={styles.emptyCard}>
             <Text style={styles.emptyTitle}>No tienes ofertas publicadas</Text>
             <Text style={styles.emptyText}>
@@ -64,7 +79,7 @@ export default function MisOfertasScreen() {
           </View>
         )}
 
-        {ofertas.map((oferta) => (
+        {!error && ofertas.map((oferta) => (
           <Pressable
             key={oferta.id}
             style={({ pressed }) => [styles.fila, pressed && styles.pressed]}
@@ -79,8 +94,9 @@ export default function MisOfertasScreen() {
                 {oferta.address} · {oferta.active === false ? "Inactiva" : "Activa"}
               </Text>
             </View>
-            <View style={styles.contador}>
+            <View style={styles.applicationsCount}>
               <Text style={styles.contadorText}>{oferta.applicationsCount ?? 0}</Text>
+              <Text style={styles.applicationsLabel}>aplicaciones</Text>
             </View>
           </Pressable>
         ))}
@@ -99,7 +115,14 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   botonNuevoText: { color: "#FFFFFF", fontWeight: "800", fontSize: 13 },
-  lista: { gap: 10, paddingHorizontal: 16, paddingBottom: 28 },
+  lista: {
+    gap: 12,
+    width: "100%",
+    maxWidth: 720,
+    alignSelf: "center",
+    paddingHorizontal: 16,
+    paddingBottom: 28,
+  },
   emptyCard: {
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
@@ -110,6 +133,33 @@ const styles = StyleSheet.create({
   },
   emptyTitle: { color: "#102A43", fontSize: 18, fontWeight: "800" },
   emptyText: { color: "#526B7A", fontSize: 14, lineHeight: 20 },
+  stateCard: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#D9E2EC",
+    borderRadius: 12,
+    padding: 16,
+  },
+  stateText: { color: "#526B7A", fontSize: 14, textAlign: "center" },
+  errorCard: {
+    backgroundColor: "#FEF2F2",
+    borderWidth: 1,
+    borderColor: "#FECACA",
+    borderRadius: 12,
+    padding: 16,
+  },
+  errorTitle: { color: "#991B1B", fontSize: 16, fontWeight: "800" },
+  errorText: { color: "#B91C1C", fontSize: 14, lineHeight: 20, marginTop: 4 },
+  retryButton: {
+    alignSelf: "flex-start",
+    minHeight: 40,
+    marginTop: 12,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    justifyContent: "center",
+    backgroundColor: "#B91C1C",
+  },
+  retryButtonText: { color: "#FFFFFF", fontSize: 14, fontWeight: "800" },
   fila: {
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
@@ -117,22 +167,24 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     flexDirection: "row",
     alignItems: "center",
-    padding: 12,
+    minHeight: 88,
+    padding: 14,
     gap: 10,
   },
   filaInfo: { flex: 1 },
   ofertaTitulo: { color: "#102A43", fontSize: 16, fontWeight: "800" },
   desc: { color: "#486581", fontSize: 13, marginTop: 2 },
   meta: { color: "#829AB1", fontSize: 12, marginTop: 4 },
-  contador: {
-    minWidth: 30,
-    height: 30,
-    borderRadius: 999,
+  applicationsCount: {
+    minWidth: 64,
+    minHeight: 54,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#0E7490",
     paddingHorizontal: 8,
   },
   contadorText: { color: "#FFFFFF", fontWeight: "800", fontSize: 12 },
+  applicationsLabel: { color: "#CFFAFE", fontSize: 9, fontWeight: "700", textAlign: "center" },
   pressed: { opacity: 0.75 },
 });

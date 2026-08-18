@@ -2,6 +2,8 @@ import { router } from "expo-router";
 import { useState } from "react";
 
 import { useAuth } from "@/auth/auth-context";
+import { mostrarToast } from "@/components/toast";
+import { confirmarAccion } from "@/components/confirmation-dialog";
 import {
   AuthScreen,
   ErrorMessage,
@@ -55,6 +57,7 @@ export default function RegisterScreen() {
         password,
         referralMatricula.trim(),
       );
+      mostrarToast("Cuenta creada", "Completa tu perfil para continuar.");
       router.replace("/complete-profile");
     } catch (requestError) {
       setError(
@@ -125,7 +128,7 @@ export default function RegisterScreen() {
       <ErrorMessage message={error} />
       <PrimaryButton
         isLoading={isLoading}
-        onPress={handleRegister}
+        onPress={() => confirmarAccion({ title: "Crear cuenta", message: "¿Deseas guardar los datos para crear tu cuenta?", confirmText: "Guardar datos", onConfirm: () => void handleRegister() })}
         title="Crear cuenta"
       />
     </AuthScreen>

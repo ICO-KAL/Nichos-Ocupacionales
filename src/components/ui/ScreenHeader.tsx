@@ -11,14 +11,22 @@ type ScreenHeaderProps = {
 export function ScreenHeader({ title, subtitle, onBack, rightSlot }: ScreenHeaderProps) {
   return (
     <View style={styles.container}>
-      <View style={styles.topRow}>
-        <Pressable onPress={onBack} style={({ pressed }) => [styles.backBtn, pressed && styles.pressed]}>
-          <Text style={styles.backText}>← Volver</Text>
-        </Pressable>
-        {rightSlot ? <View>{rightSlot}</View> : <View />}
+      <View style={styles.content}>
+        <View style={styles.topRow}>
+          <Pressable
+            onPress={onBack}
+            android_ripple={{ color: '#cffafe', borderless: true }}
+            accessibilityRole="button"
+            accessibilityLabel="Volver"
+            style={({ pressed }) => [styles.backBtn, pressed && styles.pressed]}
+          >
+            <Text style={styles.backText}>← Volver</Text>
+          </Pressable>
+          {rightSlot ? <View>{rightSlot}</View> : <View />}
+        </View>
+        <Text style={styles.title}>{title}</Text>
+        {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
       </View>
-      <Text style={styles.title}>{title}</Text>
-      {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
     </View>
   );
 }
@@ -30,13 +38,19 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     backgroundColor: "#F4F7F8",
   },
+  content: {
+    width: "100%",
+    maxWidth: 720,
+    alignSelf: "center",
+  },
   topRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
   backBtn: {
-    minHeight: 34,
+    minHeight: 44,
+    minWidth: 44,
     justifyContent: "center",
   },
   backText: {
@@ -49,11 +63,13 @@ const styles = StyleSheet.create({
     color: "#102A43",
     fontSize: 28,
     fontWeight: "800",
+    includeFontPadding: false,
   },
   subtitle: {
     marginTop: 2,
     color: "#627D98",
     fontSize: 14,
+    includeFontPadding: false,
   },
   pressed: {
     opacity: 0.7,

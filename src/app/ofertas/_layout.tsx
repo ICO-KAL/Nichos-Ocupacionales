@@ -6,6 +6,7 @@ export default function OfertasLayout() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="publicar" />
       <Stack.Screen name="index" />
+      <Stack.Screen name="mapa" />
       <Stack.Screen name="[id]" />
     </Stack>
   );

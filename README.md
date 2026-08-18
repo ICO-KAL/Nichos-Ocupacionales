@@ -11,6 +11,12 @@ Aplicacion cliente de Ocupa2 con autenticacion, perfil, flujo de aplicante y flu
 - **HU-F003 - Recuperar contrasena:** generacion de un codigo de un solo uso que expira en 15 minutos y permite establecer una nueva contrasena.
 - **HU-F004 - Cerrar sesion:** invalida la sesion del servidor, elimina el token local y regresa a la pantalla de acceso.
 
+### Ofertas y postulaciones
+
+- **Publicar una oferta:** permite agregar preguntas opcionales de texto, fecha, seleccion o si/no.
+- **Postularse a una oferta:** el formulario se construye con las preguntas que entregue la oferta. Las ofertas sin preguntas adicionales se pueden postular normalmente.
+- **Diseno movil:** el detalle limita su ancho en pantallas grandes, evita que los titulos largos se superpongan con el tipo de contrato y ajusta el formulario al teclado en iOS.
+
 ### Tecnologias
 
 - Cliente: Expo SDK 57, React Native, Expo Router y TypeScript.

@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { JobType, useAuth } from "@/auth/auth-context";
+import { mostrarToast } from "@/components/toast";
+import { confirmarAccion } from "@/components/confirmation-dialog";
 import {
   AuthScreen,
   ErrorMessage,
@@ -64,6 +66,7 @@ export default function AddExperienceScreen() {
         jobTypeKey: jobTypeKey.trim(),
         certificateImage,
       });
+      mostrarToast("Experiencia guardada", "Tu experiencia laboral fue registrada.");
       router.back();
     } catch (requestError) {
       setError(
@@ -128,7 +131,7 @@ export default function AddExperienceScreen() {
       <ErrorMessage message={error} />
       <PrimaryButton
         isLoading={isLoading}
-        onPress={handleSave}
+        onPress={() => confirmarAccion({ title: "Guardar experiencia", message: "¿Deseas guardar esta experiencia laboral?", confirmText: "Guardar datos", onConfirm: () => void handleSave() })}
         title="Guardar experiencia"
       />
     </AuthScreen>
