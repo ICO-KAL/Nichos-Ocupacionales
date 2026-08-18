@@ -16,6 +16,8 @@ import {
 
 import { AuthProvider, useAuth } from "@/auth/auth-context";
 import { AnimatedSplashOverlay } from "@/components/animated-icon";
+import { ToastHost } from "@/components/toast";
+import { ConfirmationDialogHost } from "@/components/confirmation-dialog";
 import "../global.css";
 
 SplashScreen.preventAutoHideAsync();
@@ -72,6 +74,8 @@ export default function TabLayout() {
       <AnimatedSplashOverlay />
       <AuthProvider>
         <AuthGate />
+        <ToastHost />
+        <ConfirmationDialogHost />
       </AuthProvider>
     </ThemeProvider>
   );

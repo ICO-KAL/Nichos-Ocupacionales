@@ -2,6 +2,8 @@ import { router } from "expo-router";
 import { useState } from "react";
 
 import { useAuth } from "@/auth/auth-context";
+import { mostrarToast } from "@/components/toast";
+import { confirmarAccion } from "@/components/confirmation-dialog";
 import {
   AuthScreen,
   ErrorMessage,
@@ -45,6 +47,7 @@ export default function CompleteProfileScreen() {
         gender: gender.trim(),
         birthDate: birthDate.trim(),
       });
+      mostrarToast("Perfil guardado", "Tus datos se actualizaron correctamente.");
       router.replace("/dashboard");
     } catch (requestError) {
       setError(
@@ -98,7 +101,7 @@ export default function CompleteProfileScreen() {
       <ErrorMessage message={error} />
       <PrimaryButton
         isLoading={isLoading}
-        onPress={handleSave}
+        onPress={() => confirmarAccion({ title: "Guardar perfil", message: "¿Deseas guardar los cambios de tu perfil?", confirmText: "Guardar datos", onConfirm: () => void handleSave() })}
         title="Guardar y continuar"
       />
     </AuthScreen>

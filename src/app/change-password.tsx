@@ -2,6 +2,8 @@ import { router } from "expo-router";
 import { useState } from "react";
 
 import { useAuth } from "@/auth/auth-context";
+import { mostrarToast } from "@/components/toast";
+import { confirmarAccion } from "@/components/confirmation-dialog";
 import {
   AuthScreen,
   ErrorMessage,
@@ -34,6 +36,7 @@ export default function ChangePasswordScreen() {
     setIsLoading(true);
     try {
       await changePassword(password);
+      mostrarToast("Contraseña actualizada", "Tu contraseña se cambió correctamente.");
       router.back();
     } catch (requestError) {
       setError(
@@ -71,7 +74,7 @@ export default function ChangePasswordScreen() {
       <ErrorMessage message={error} />
       <PrimaryButton
         isLoading={isLoading}
-        onPress={handleChange}
+        onPress={() => confirmarAccion({ title: "Actualizar contraseña", message: "¿Deseas guardar tu nueva contraseña?", onConfirm: () => void handleChange() })}
         title="Guardar cambios"
       />
     </AuthScreen>

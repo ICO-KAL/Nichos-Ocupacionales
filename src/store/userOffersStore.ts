@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { api } from '@/lib/api/client';
+import { api, mensajeDeError } from '@/lib/api/client';
 import type { JobType, Offer } from '../types/offers';
 
 interface OffersState {
@@ -35,7 +35,7 @@ export const useOffersStore = create<OffersState>((set, get) => ({
       const endpoint = queryString ? `/offers?${queryString}` : '/offers';
 
       // 3. Hacemos la petición al API
-      const response = await api.get(endpoint);
+      const response = await api.get<Offer[]>(endpoint);
 
       // 4. Validamos la respuesta y actualizamos el estado
       if (response.data && response.data.ok) {
@@ -43,14 +43,13 @@ export const useOffersStore = create<OffersState>((set, get) => ({
       } else {
         set({ error: 'No se pudieron cargar las ofertas.', isLoading: false });
       }
-    } catch (error: any) {
-      // 5. Manejo de errores de red o del servidor
-      set({ error: error.response?.data?.message || 'Error de conexión', isLoading: false});
+    } catch (error) {
+      set({ error: mensajeDeError(error), isLoading: false });
     }
   },
   fetchJobTypes: async () => {
     try {
-        const response = await api.get('/job-types');
+        const response = await api.get<JobType[]>('/job-types');
         if (response.data && response.data.ok) {
             const activeTypes = response.data.data.filter((jt: JobType) => jt.active);
             set({ jobTypes: activeTypes})

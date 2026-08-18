@@ -16,13 +16,15 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedTextInput } from '@/components/themed-text-input';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { mostrarToast } from '@/components/toast';
+import { confirmarAccion } from '@/components/confirmation-dialog';
 import { mostrarAlerta } from '@/lib/alert';
 import { Spacing } from '@/constants/theme';
 import { obtenerTiposDeEmpleo } from '@/lib/api/catalogo';
@@ -55,6 +57,7 @@ export default function PublicarOfertaScreen() {
   const [ubicacion, setUbicacion] = useState<{ lat: number; lng: number } | null>(null);
   const [buscandoUbicacion, setBuscandoUbicacion] = useState(false);
   const [preguntas, setPreguntas] = useState<OfferQuestionInput[]>([]);
+  const [customAnswers, setCustomAnswers] = useState<Record<string, unknown>>({});
   const [publicando, setPublicando] = useState(false);
   const handleBack = () => {
     if (router.canGoBack()) {
@@ -74,7 +77,6 @@ export default function PublicarOfertaScreen() {
   const {
     control,
     handleSubmit,
-    watch,
     setValue,
     formState: { errors },
   } = useForm<OfertaFormValues>({
@@ -94,7 +96,7 @@ export default function PublicarOfertaScreen() {
     },
   });
 
-  const jobTypeKeySeleccionado = watch('jobTypeKey');
+  const jobTypeKeySeleccionado = useWatch({ control, name: 'jobTypeKey' });
   const tipoSeleccionado = useMemo(
     () => tiposEmpleo.find((t) => t.key === jobTypeKeySeleccionado),
     [tiposEmpleo, jobTypeKeySeleccionado]
@@ -164,9 +166,21 @@ export default function PublicarOfertaScreen() {
   const quitarPregunta = (index: number) => {
     setPreguntas((prev) => prev.filter((_, i) => i !== index));
   };
+  const actualizarRespuestaPersonalizada = (key: string, value: unknown) => {
+    setCustomAnswers((prev) => ({ ...prev, [key]: value }));
+  };
 
   // --- Envío: cobrar 1 USD y solo si aprueba, publicar ---
   const onSubmit = async (valores: OfertaFormValues) => {
+    const campoRequeridoSinRespuesta = tipoSeleccionado?.customFields?.find((campo) => {
+      const value = customAnswers[campo.key];
+      return campo.required && (value === undefined || value === null || value === '');
+    });
+    if (campoRequeridoSinRespuesta) {
+      mostrarAlerta('Campo requerido', `Completa: ${campoRequeridoSinRespuesta.label}`);
+      return;
+    }
+
     const preguntasInvalidas = preguntas.some((p) => !p.label.trim());
     if (preguntasInvalidas) {
       mostrarAlerta('Revisa las preguntas', 'Cada pregunta adicional necesita un texto.');
@@ -193,10 +207,11 @@ export default function PublicarOfertaScreen() {
         location: ubicacion ?? undefined,
         payment: { amount: pago.amount ?? 1, currency: pago.currency ?? 'USD' },
         deadline: valores.deadline || undefined,
+        customAnswers,
         questions: preguntas.length > 0 ? preguntas : undefined,
       });
 
-      mostrarAlerta('Oferta publicada', 'Tu oferta ya está visible para los aplicantes.');
+      mostrarToast('Oferta publicada', 'Tu oferta ya está visible para los aplicantes.');
       router.replace('/mis-ofertas');
     } catch (e) {
       mostrarAlerta('No se pudo publicar', mensajeDeError(e));
@@ -336,15 +351,71 @@ export default function PublicarOfertaScreen() {
           )}
         />
 
-        {/* Campos personalizados del tipo de empleo seleccionado, si el API los trae */}
-        {tipoSeleccionado?.customFields && tipoSeleccionado.customFields.length > 0 && (
-          <View style={styles.aviso}>
-            <ThemedText type="small">
-              Este tipo de empleo trae campos personalizados ({tipoSeleccionado.customFields.map((c) => c.label).join(', ')}).
-              Captúralos como preguntas adicionales abajo si aplica.
+        {tipoSeleccionado?.customFields?.length ? (
+          <View style={styles.camposPersonalizados}>
+            <ThemedText type="subtitle" style={styles.seccionGrande}>
+              Datos del empleo
             </ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">
+              Completa los campos solicitados para {tipoSeleccionado.name}.
+            </ThemedText>
+            {tipoSeleccionado.customFields.map((campo) => {
+              const value = customAnswers[campo.key];
+              return (
+                <View key={campo.key} style={styles.campoPersonalizado}>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {campo.label}{campo.required ? ' *' : ''}
+                  </ThemedText>
+                  {campo.type === 'select' ? (
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chips}>
+                      {(campo.options ?? []).map((opcion) => (
+                        <Pressable
+                          key={opcion}
+                          onPress={() => actualizarRespuestaPersonalizada(campo.key, opcion)}
+                          style={[
+                            styles.chipChico,
+                            value === opcion && styles.chipActivo,
+                          ]}
+                        >
+                          <Text style={[styles.chipText, value === opcion && styles.chipTextActive]}>
+                            {opcion}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </ScrollView>
+                  ) : campo.type === 'check' ? (
+                    <View style={styles.filaChips}>
+                      {[true, false].map((opcion) => (
+                        <Pressable
+                          key={String(opcion)}
+                          onPress={() => actualizarRespuestaPersonalizada(campo.key, opcion)}
+                          style={[
+                            styles.chipChico,
+                            value === opcion && styles.chipActivo,
+                          ]}
+                        >
+                          <Text style={[styles.chipText, value === opcion && styles.chipTextActive]}>
+                            {opcion ? 'Sí' : 'No'}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  ) : (
+                    <ThemedTextInput
+                      value={typeof value === 'string' ? value : ''}
+                      onChangeText={(respuesta) =>
+                        actualizarRespuestaPersonalizada(campo.key, respuesta)
+                      }
+                      placeholder={campo.type === 'date' ? 'AAAA-MM-DD' : campo.label}
+                      keyboardType={campo.type === 'number' ? 'numeric' : 'default'}
+                      style={styles.input}
+                    />
+                  )}
+                </View>
+              );
+            })}
           </View>
-        )}
+        ) : null}
 
         <ThemedText type="subtitle" style={styles.seccionGrande}>
           Preguntas adicionales
@@ -469,7 +540,16 @@ export default function PublicarOfertaScreen() {
           )}
         />
 
-        <Pressable style={styles.botonPrincipal} onPress={handleSubmit(onSubmit)} disabled={publicando}>
+        <Pressable
+          style={styles.botonPrincipal}
+          onPress={() => confirmarAccion({
+            title: 'Publicar oferta',
+            message: 'Se procesará el pago y se guardarán los datos de la oferta. ¿Deseas continuar?',
+            confirmText: 'Guardar datos',
+            onConfirm: () => void handleSubmit(onSubmit)(),
+          })}
+          disabled={publicando}
+        >
           <ThemedText themeColor="background" type="smallBold">
             {publicando ? 'Publicando...' : 'Pagar y publicar'}
           </ThemedText>
@@ -484,6 +564,9 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, minHeight: 0, backgroundColor: '#EEF3F7' },
   scroll: { paddingBottom: Spacing.six },
   formCard: {
+    width: '100%',
+    maxWidth: 720,
+    alignSelf: 'center',
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#D9E2EC',
@@ -531,6 +614,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.three,
     fontSize: 15,
+    color: '#102A43',
     marginTop: Spacing.one,
   },
   inputMultilinea: { minHeight: 90, textAlignVertical: 'top' },
@@ -554,6 +638,13 @@ const styles = StyleSheet.create({
     marginTop: Spacing.two,
     borderWidth: 1,
     borderColor: '#BAE6FD',
+  },
+  camposPersonalizados: {
+    marginTop: Spacing.two,
+    gap: Spacing.two,
+  },
+  campoPersonalizado: {
+    gap: Spacing.one,
   },
   preguntaCard: {
     backgroundColor: '#F8FAFC',

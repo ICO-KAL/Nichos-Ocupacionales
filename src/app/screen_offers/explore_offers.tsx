@@ -2,7 +2,7 @@ import { JobTypeFilter } from '@/components/ui/JobTypeFilter';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { OfferCard } from '../../components/ui/OfferCard';
 import { useOffersStore } from '../../store/userOffersStore';
@@ -24,18 +24,28 @@ export default function ExploreOffersScreen() {
 
   if (isLoading && offers.length === 0) {
     return (
-      <View style={styles.centeredContainer}>
-        <ActivityIndicator size="large" color="#2563eb" />
-        <Text style={styles.loadingText}>Buscando oportunidades...</Text>
-      </View>
+      <SafeAreaView style={styles.safeArea}>
+        <ScreenHeader title="Explorar ofertas" onBack={handleBack} />
+        <View style={styles.centeredContainer}>
+          <ActivityIndicator size="large" color="#2563eb" />
+          <Text style={styles.loadingText}>Buscando oportunidades...</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
   if (error) {
     return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>{error}</Text>
-      </View>
+      <SafeAreaView style={styles.safeArea}>
+        <ScreenHeader title="Explorar ofertas" onBack={handleBack} />
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorTitle}>No pudimos cargar las ofertas</Text>
+          <Text style={styles.errorText}>{error}</Text>
+          <Pressable onPress={() => fetchOffers()} style={styles.retryButton}>
+            <Text style={styles.retryButtonText}>Reintentar</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
     );
   }
 
@@ -54,14 +64,24 @@ export default function ExploreOffersScreen() {
         refreshing={isLoading}
         onRefresh={() => fetchOffers()}
         ListHeaderComponent={
-          <View>
+          <View style={styles.headerContent}>
             <ScreenHeader
               title="Explorar ofertas"
               subtitle="Encuentra tu próximo trabajo temporal"
               onBack={handleBack}
             />
-            <View style={styles.filterWrap}>
-              <JobTypeFilter />
+            <View style={styles.controlsRow}>
+              <View style={styles.filterWrap}>
+                <JobTypeFilter />
+              </View>
+              <Pressable
+                onPress={() => router.push('/ofertas/mapa')}
+                style={styles.mapButton}
+                accessibilityRole="button"
+                accessibilityLabel="Ver ofertas en el mapa"
+              >
+                <Text style={styles.mapButtonText}>Ver mapa</Text>
+              </Pressable>
             </View>
           </View>
         }
@@ -96,7 +116,25 @@ const styles = StyleSheet.create({
   errorText: {
     color: '#ef4444',
     textAlign: 'center',
+    marginTop: 8,
     marginBottom: 16,
+  },
+  errorTitle: {
+    color: '#111827',
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  retryButton: {
+    minHeight: 44,
+    paddingHorizontal: 18,
+    borderRadius: 10,
+    backgroundColor: '#2563eb',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  retryButtonText: {
+    color: '#ffffff',
+    fontWeight: '700',
   },
   safeArea: {
     flex: 1,
@@ -105,11 +143,40 @@ const styles = StyleSheet.create({
   listContent: {
     paddingBottom: 20,
   },
-  filterWrap: {
-    paddingHorizontal: 16,
+  headerContent: {
+    width: '100%',
+    maxWidth: 720,
+    alignSelf: 'center',
+  },
+  controlsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingLeft: 16,
     marginBottom: 8,
   },
+  filterWrap: {
+    flex: 1,
+  },
+  mapButton: {
+    minHeight: 40,
+    marginRight: 16,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: '#2563eb',
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ffffff',
+  },
+  mapButtonText: {
+    color: '#1d4ed8',
+    fontSize: 13,
+    fontWeight: '700',
+  },
   offerItem: {
+    width: '100%',
+    maxWidth: 720,
+    alignSelf: 'center',
     paddingHorizontal: 16,
   },
   emptyContainer: {
